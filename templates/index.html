@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fruit Freshness Detector</title>
+    <style>
+        /* General styles */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f4f8;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            background-color: white;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            max-width: 600px;
+            width: 100%;
+            padding: 30px;
+            text-align: center;
+        }
+
+        /* Heading styles */
+        h1 {
+            color: #2c3e50;
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+        }
+
+        /* Form styles */
+        form {
+            margin-bottom: 30px;
+        }
+        input[type="file"] {
+            display: block;
+            margin: 20px auto;
+            padding: 10px;
+            background-color: #ecf0f1;
+            border: 1px solid #bdc3c7;
+            border-radius: 5px;
+            width: 80%;
+            max-width: 350px;
+        }
+
+        /* Button styles */
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        /* Prediction styles */
+        .prediction {
+            background-color: #2ecc71;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            font-size: 1.2rem;
+            color: white;
+        }
+
+        .shelf-life {
+            margin-top: 10px;
+            background-color: #f39c12;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 1rem;
+            color: white;
+        }
+
+        /* Image preview styles */
+        .image-preview {
+            margin-top: 20px;
+        }
+        .image-preview img {
+            max-width: 100%;
+            height: auto;
+            border: 3px solid #eaeaea;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Footer styles */
+        footer {
+            margin-top: 30px;
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Fruit Freshness Detector</h1>
+        <form action="{{ url_for('predict') }}" method="POST" enctype="multipart/form-data">
+            <label for="file">Upload an image of a fruit:</label><br>
+            <input type="file" name="file" accept="image/*" required><br>
+            <button type="submit">Predict Freshness</button>
+        </form>
+
+        {% if prediction %}
+        <div class="prediction">
+            <h2>Prediction: {{ prediction }}</h2>
+        </div>
+        <div class="shelf-life">
+            <p>Shelf Life: {{ shelf_life }} days</p>
+        </div>
+       <!-- <div class="image-preview">
+            <h3>Uploaded Image:</h3>
+            <img src="{{ url_for('uploaded_file', filename=image_path) }}" alt="Uploaded image">
+        </div> -->
+        {% endif %}
+    </div>
+
+    <footer>
+        <p>&copy; 2024 Fruit Freshness Detector. All rights reserved.</p>
+    </footer>
+</body>
+</html>

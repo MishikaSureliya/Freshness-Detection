@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Prediction Results</title>
+    <style>
+        table {
+            width: 80%;
+            margin: auto;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid black;
+            text-align: center;
+            padding: 8px;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        h1 {
+            text-align: center;
+            font-family: Arial, sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <h1>Prediction Results</h1>
+    <table>
+        <tr>
+            <th>Filename</th>
+            <th>Prediction</th>
+            <th>Shelf Life (Days)</th>
+            <th>Timestamp</th>
+            <th>Freshness (Scale 1-5)</th>
+        </tr>
+        {% for prediction in predictions %}
+        <tr>
+            <td>{{ prediction.filename }}</td>
+            <td>{{ prediction.prediction }}</td>
+            <td>{{ prediction.shelf_life }}</td>
+            <td>{{ prediction.timestamp }}</td>
+            <td>{{ prediction.freshness }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>
