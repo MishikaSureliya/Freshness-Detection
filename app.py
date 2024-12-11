@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, send_from_directory, jsonify
+import streamlit as st
 import os
 import numpy as np
 from tensorflow.keras.models import load_model
@@ -6,8 +6,6 @@ from tensorflow.keras.preprocessing.image import load_img, img_to_array
 from pymongo import MongoClient
 from datetime import datetime
 import logging
-
-app = Flask(__name__)
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -56,36 +54,41 @@ def calculate_freshness(shelf_life):
     else:
         return 5  # Very fresh
 
-@app.route('/')
-def index():
-    return render_template('index.html')
+# Streamlit UI
+st.title("Fruit Freshness Prediction")
+st.write("Upload a fruit image to predict its freshness and shelf life.")
 
-@app.route('/predict', methods=['POST'])
-def predict():
-    if 'file' not in request.files:
-        return redirect(request.url)
+# File uploader
+uploaded_file = st.file_uploader("Choose a fruit image...", type=["jpg", "png", "jpeg"])
 
-    file = request.files['file']
-    if file.filename == '':
-        return redirect(request.url)
-
+if uploaded_file is not None:
     try:
-        file_path = os.path.join(IMAGE_DIR, file.filename)
-        file.save(file_path)
-        logging.info(f"File saved at {file_path}")
-
+        # Save the uploaded file to a local directory (optional, for logging)
+        file_path = os.path.join(IMAGE_DIR, uploaded_file.name)
+        with open(file_path, "wb") as f:
+            f.write(uploaded_file.getbuffer())
+        st.image(uploaded_file, caption="Uploaded Image", use_column_width=True)
+        
+        # Preprocess image
         img = load_img(file_path, target_size=TARGET_SIZE)
         img_array = img_to_array(img) / 255.0
         img_array = np.expand_dims(img_array, axis=0)
-
+        
+        # Make prediction
         prediction = model.predict(img_array)
         predicted_class = CLASS_LABELS[np.argmax(prediction)]
         shelf_life = SHELF_LIFE[predicted_class]
         freshness = calculate_freshness(shelf_life)
 
+        # Display results
+        st.write(f"Prediction: {predicted_class}")
+        st.write(f"Shelf Life: {shelf_life} days")
+        st.write(f"Freshness: {freshness} (1=Rotten, 5=Very Fresh)")
+
+        # Save the result to MongoDB
         timestamp = datetime.utcnow().isoformat()
         result = {
-            "filename": file.filename,
+            "filename": uploaded_file.name,
             "prediction": predicted_class,
             "shelf_life": shelf_life,
             "freshness": freshness,
@@ -94,26 +97,19 @@ def predict():
         collection.insert_one(result)
         logging.info("Prediction saved to MongoDB.")
 
-        return render_template('index.html', prediction=predicted_class, shelf_life=shelf_life, freshness=freshness, image_path=file.filename)
     except Exception as e:
         logging.error(f"Error during prediction: {e}")
-        return "An error occurred during prediction. Please try again."
+        st.error("An error occurred during prediction. Please try again.")
 
-@app.route('/uploads/<filename>')
-def uploaded_file(filename):
-    return send_from_directory(IMAGE_DIR, filename)
-
-@app.route('/api/predictions', methods=['GET'])
-def get_predictions():
+# Display predictions stored in MongoDB
+if st.button("View All Predictions"):
     predictions = list(collection.find({}, {"_id": 0}))
-    return jsonify(predictions)
+    if predictions:
+        st.write(f"Total Predictions: {len(predictions)}")
+        for prediction in predictions:
+            freshness = calculate_freshness(prediction["shelf_life"])
+            prediction["freshness"] = freshness
+            st.write(prediction)
+    else:
+        st.write("No predictions found.")
 
-@app.route('/view-predictions', methods=['GET'])
-def view_predictions():
-    predictions = list(collection.find({}, {"_id": 0}))
-    for prediction in predictions:
-        prediction["freshness"] = calculate_freshness(prediction["shelf_life"])
-    return render_template('predictions.html', predictions=predictions)
-
-if __name__ == '__main__':
-    app.run(debug=True)
