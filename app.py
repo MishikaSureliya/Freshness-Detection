@@ -128,3 +128,14 @@ if st.button("View All Predictions"):
     except Exception as e:
         logging.error(f"Error retrieving predictions from MongoDB: {traceback.format_exc()}")
         st.error("Failed to retrieve predictions. Please check the logs.")
+
+# Button to test MongoDB connection
+if st.button("Test MongoDB Connection"):
+    try:
+        # Try querying MongoDB to test connection
+        collection.count_documents({})  # Just a simple operation to check if the connection works
+        st.success("MongoDB connection is successful!")
+        logging.info("MongoDB connection is successful.")
+    except Exception as e:
+        st.error("MongoDB connection failed.")
+        logging.error(f"Error while testing MongoDB connection: {traceback.format_exc()}")
