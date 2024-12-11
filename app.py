@@ -11,7 +11,7 @@ import logging
 logging.basicConfig(level=logging.INFO)
 
 # Load the pre-trained model
-MODEL_PATH = 'Fresh_Rotten_Fruits_MobileNetV2_Transfer_Learning.h5'  # Updated to reflect your model's location
+MODEL_PATH = 'Fresh_Rotten_Fruits_MobileNetV2_Transfer_Learning.h5'  # Update to reflect your model's location
 if not os.path.exists(MODEL_PATH):
     st.error(f"Model file not found at {MODEL_PATH}. Please check the path.")
     logging.error(f"Model file not found at {MODEL_PATH}.")
@@ -19,16 +19,16 @@ else:
     model = load_model(MODEL_PATH)
     logging.info("Model loaded successfully.")
 
-# MongoDB setup
-MONGO_URI = "mongodb://localhost:27017/"  # Replace with your MongoDB URI if needed
+# MongoDB Atlas setup
+MONGO_URI = "mongodb+srv://mishikasureliya29:Mishika@29@cluster0.ggvst.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 try:
     client = MongoClient(MONGO_URI)
-    db = client["fruit_database"]  # Database name
-    collection = db["predictions"]  # Collection name
-    logging.info("Connected to MongoDB.")
+    db = client["fruit_database"]  # Replace with your database name
+    collection = db["predictions"]  # Replace with your collection name
+    logging.info("Connected to MongoDB Atlas.")
 except Exception as e:
-    st.error("Failed to connect to MongoDB. Please check your MongoDB setup.")
-    logging.error(f"Failed to connect to MongoDB: {e}")
+    st.error("Failed to connect to MongoDB Atlas. Please check your MongoDB setup.")
+    logging.error(f"Failed to connect to MongoDB Atlas: {e}")
     raise
 
 # Define constants
@@ -92,8 +92,8 @@ if uploaded_file is not None:
             "timestamp": timestamp
         }
         collection.insert_one(result)
-        st.success("Prediction saved to MongoDB.")
-        logging.info("Prediction saved to MongoDB.")
+        st.success("Prediction saved to MongoDB Atlas.")
+        logging.info("Prediction saved to MongoDB Atlas.")
 
     except Exception as e:
         logging.error(f"Error during prediction: {e}")
@@ -105,10 +105,7 @@ if st.button("View All Predictions"):
         predictions = list(collection.find({}, {"_id": 0}))
         if predictions:
             st.write(f"Total Predictions: {len(predictions)}")
-            for prediction in predictions:
-                freshness = calculate_freshness(prediction["shelf_life"])
-                prediction["freshness"] = freshness
-                st.write(prediction)
+            st.dataframe(predictions)  # Display as a table in Streamlit
         else:
             st.write("No predictions found.")
     except Exception as e:
