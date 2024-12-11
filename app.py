@@ -1,55 +1,3 @@
-import streamlit as st
-import os
-import numpy as np
-from tensorflow.keras.models import load_model
-from tensorflow.keras.preprocessing.image import load_img, img_to_array
-from pymongo import MongoClient
-from datetime import datetime
-import logging
-
-# Setup logging
-logging.basicConfig(level=logging.INFO)
-
-# MongoDB setup
-MONGO_URI = "mongodb://localhost:27017/"
-try:
-    client = MongoClient(MONGO_URI)
-    db = client["fruit_database"]
-    collection = db["predictions"]
-    logging.info("Connected to MongoDB.")
-except Exception as e:
-    logging.error(f"Failed to connect to MongoDB: {e}")
-    raise
-
-# Define constants
-TARGET_SIZE = (224, 224)
-CLASS_LABELS = ['Fresh Apple', 'Fresh Banana', 'Fresh Orange', 'Rotten Apple', 'Rotten Bananas', 'Rotten Orange']
-SHELF_LIFE = {
-    'Fresh Apple': 10,
-    'Fresh Banana': 5,
-    'Fresh Orange': 15,
-    'Rotten Apple': 0,
-    'Rotten Bananas': 0,
-    'Rotten Orange': 0
-}
-
-# Function to calculate freshness score
-def calculate_freshness(shelf_life):
-    if shelf_life == 0:
-        return 1
-    elif 1 <= shelf_life <= 5:
-        return 2
-    elif 6 <= shelf_life <= 10:
-        return 3
-    elif 11 <= shelf_life <= 15:
-        return 4
-    else:
-        return 5
-
-# Streamlit UI
-st.title("Fruit Freshness Prediction")
-st.write("Upload a fruit image and the pre-trained model to predict freshness.")
-
 # Model file uploader
 model_file = st.file_uploader("Upload Model File", type=["h5"])
 
@@ -58,10 +6,11 @@ if model_file is not None:
         # Load the model from the uploaded file
         model = load_model(model_file)
         logging.info("Model loaded successfully.")
+        st.success("Model loaded successfully! You can now upload an image.")
 
         # Image file uploader
-        uploaded_file = st.file_uploader("Choose a fruit image...", type=["jpg", "png", "jpeg"])
-
+        uploaded_file = st.file_uploader("Upload a fruit image for prediction", type=["jpg", "png", "jpeg"])
+        
         if uploaded_file is not None:
             try:
                 # Process image
