@@ -20,7 +20,8 @@ else:
     logging.info("Model loaded successfully.")
 
 # MongoDB Atlas setup
-MONGO_URI = "mongodb+srv://mishikasureliya29:Mishika@29@cluster0.ggvst.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+MONGO_URI = "mongodb+srv://mishikasureliya29:Mishika%4029@cluster0.ggvst.mongodb.net/fruit_database?retryWrites=true&w=majority"
+
 try:
     client = MongoClient(MONGO_URI)
     db = client["fruit_database"]  # Replace with your database name
