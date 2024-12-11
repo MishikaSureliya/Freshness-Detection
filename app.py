@@ -6,35 +6,39 @@ from tensorflow.keras.preprocessing.image import load_img, img_to_array
 from pymongo import MongoClient
 from datetime import datetime
 import logging
+import traceback
 
 # Setup logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 # Load the pre-trained model
-MODEL_PATH = 'Fresh_Rotten_Fruits_MobileNetV2_Transfer_Learning.h5'  # Update with your model's location
-if not os.path.exists(MODEL_PATH):
+MODEL_PATH = 'Fresh_Rotten_Fruits_MobileNetV2_Transfer_Learning.h5'
+model = None
+if os.path.exists(MODEL_PATH):
+    try:
+        model = load_model(MODEL_PATH)
+        logging.info("Model loaded successfully.")
+    except Exception as e:
+        st.error(f"Failed to load the model. Error: {e}")
+        logging.error(f"Failed to load the model: {traceback.format_exc()}")
+        raise
+else:
     st.error(f"Model file not found at {MODEL_PATH}. Please check the path.")
     logging.error(f"Model file not found at {MODEL_PATH}.")
-else:
-    model = load_model(MODEL_PATH)
-    logging.info("Model loaded successfully.")
+    raise FileNotFoundError(f"Model file not found at {MODEL_PATH}.")
 
-# MongoDB connection setup
+# MongoDB connection
 MONGO_URI = "mongodb+srv://mishikasureliya29:Mishika%4029@cluster0.ggvst.mongodb.net/fruit_database?retryWrites=true&w=majority"
-
-def connect_to_mongo():
-    try:
-        client = MongoClient(MONGO_URI)
-        db = client["FruitFresh"]  # Replace with your database name
-        collection = db["Predictions"]  # Replace with your collection name
-        logging.info("Connected to MongoDB Atlas.")
-        return collection
-    except Exception as e:
-        st.error("Failed to connect to MongoDB Atlas. Please check your MongoDB setup.")
-        logging.error(f"Failed to connect to MongoDB Atlas: {e}")
-        raise
-
-collection = connect_to_mongo()
+collection = None
+try:
+    client = MongoClient(MONGO_URI)
+    db = client["FruitFresh"]
+    collection = db["Predictions"]
+    logging.info("Connected to MongoDB Atlas.")
+except Exception as e:
+    st.error("Failed to connect to MongoDB Atlas. Please check your MongoDB setup.")
+    logging.error(f"Failed to connect to MongoDB Atlas: {traceback.format_exc()}")
+    raise
 
 # Define constants
 TARGET_SIZE = (224, 224)
@@ -102,7 +106,7 @@ def process_images(uploaded_files):
             logging.info(f"Prediction for {uploaded_file.name} saved to MongoDB.")
 
         except Exception as e:
-            logging.error(f"Error during prediction for {uploaded_file.name}: {e}")
+            logging.error(f"Error during prediction for {uploaded_file.name}: {traceback.format_exc()}")
             st.error(f"An error occurred during prediction for {uploaded_file.name}. Please check the logs.")
 
 # If files are uploaded, process them
@@ -118,12 +122,9 @@ if st.button("View All Predictions"):
             for prediction in predictions:
                 freshness = calculate_freshness(prediction["shelf_life"])
                 prediction["freshness"] = freshness
-                st.json(prediction)
+                st.write(prediction)
         else:
             st.write("No predictions found.")
     except Exception as e:
-        logging.error(f"Error retrieving predictions from MongoDB: {e}")
+        logging.error(f"Error retrieving predictions from MongoDB: {traceback.format_exc()}")
         st.error("Failed to retrieve predictions. Please check the logs.")
-
-# Button to test MongoDB connection
-if st.button("Test MongoDB Connection"):
