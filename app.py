@@ -11,7 +11,7 @@ import logging
 logging.basicConfig(level=logging.INFO)
 
 # Load the pre-trained model
-MODEL_PATH = 'fresh_rotten_fruit_classifier.h5'
+MODEL_PATH = 'fresh_rotten_fruit_classifier_v2.h5'
 if not os.path.exists(MODEL_PATH):
     raise FileNotFoundError(f"Model file not found at {MODEL_PATH}")
 model = load_model(MODEL_PATH)
