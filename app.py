@@ -127,4 +127,3 @@ if st.button("View All Predictions"):
 
 # Button to test MongoDB connection
 if st.button("Test MongoDB Connection"):
-    t
