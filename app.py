@@ -24,8 +24,8 @@ MONGO_URI = "mongodb+srv://mishikasureliya29:Mishika%4029@cluster0.ggvst.mongodb
 
 try:
     client = MongoClient(MONGO_URI)
-    db = client["fruit_database"]  # Replace with your database name
-    collection = db["predictions"]  # Replace with your collection name
+    db = client["FruitFresh"]  # Replace with your database name
+    collection = db["Predictions"]  # Replace with your collection name
     logging.info("Connected to MongoDB Atlas.")
 except Exception as e:
     st.error("Failed to connect to MongoDB Atlas. Please check your MongoDB setup.")
