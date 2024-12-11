@@ -7,17 +7,15 @@ from pymongo import MongoClient
 from datetime import datetime
 import logging
 
-# Setup logging
+# Setup logging for debugging
 logging.basicConfig(level=logging.INFO)
 
 # Load the pre-trained model
-MODEL_PATH = 'Fresh_Rotten_Fruits_MobileNetV2_Transfer_Learning.h5'  # Updated to reflect your model's location
+MODEL_PATH = 'fresh_rotten_fruit_classifier_v2.h5'
 if not os.path.exists(MODEL_PATH):
-    st.error(f"Model file not found at {MODEL_PATH}. Please check the path.")
-    logging.error(f"Model file not found at {MODEL_PATH}.")
-else:
-    model = load_model(MODEL_PATH)
-    logging.info("Model loaded successfully.")
+    raise FileNotFoundError(f"Model file not found at {MODEL_PATH}")
+model = load_model(MODEL_PATH)
+logging.info("Model loaded successfully.")
 
 # MongoDB setup
 MONGO_URI = "mongodb://localhost:27017/"  # Replace with your MongoDB URI if needed
@@ -27,9 +25,9 @@ try:
     collection = db["predictions"]  # Collection name
     logging.info("Connected to MongoDB.")
 except Exception as e:
-    st.error("Failed to connect to MongoDB. Please check your MongoDB setup.")
     logging.error(f"Failed to connect to MongoDB: {e}")
-    raise
+    st.error("Error: Cannot connect to MongoDB. Please check your connection.")
+    collection = None  # To prevent further MongoDB operations
 
 # Define constants
 TARGET_SIZE = (224, 224)
@@ -65,11 +63,18 @@ uploaded_file = st.file_uploader("Choose a fruit image...", type=["jpg", "png", 
 
 if uploaded_file is not None:
     try:
+        # Save the uploaded file to a local directory (optional, for logging)
+        file_path = os.path.join("uploaded_images", uploaded_file.name)
+        os.makedirs("uploaded_images", exist_ok=True)  # Create folder if it doesn't exist
+        with open(file_path, "wb") as f:
+            f.write(uploaded_file.getbuffer())
+        st.image(uploaded_file, caption="Uploaded Image", use_column_width=True)
+        
         # Preprocess image
-        img = load_img(uploaded_file, target_size=TARGET_SIZE)
+        img = load_img(file_path, target_size=TARGET_SIZE)
         img_array = img_to_array(img) / 255.0
         img_array = np.expand_dims(img_array, axis=0)
-
+        
         # Make prediction
         prediction = model.predict(img_array)
         predicted_class = CLASS_LABELS[np.argmax(prediction)]
@@ -77,40 +82,46 @@ if uploaded_file is not None:
         freshness = calculate_freshness(shelf_life)
 
         # Display results
-        st.image(uploaded_file, caption="Uploaded Image", use_column_width=True)
         st.write(f"Prediction: *{predicted_class}*")
         st.write(f"Shelf Life: *{shelf_life} days*")
-        st.write(f"Freshness: *{freshness}* (1=Rotten, 5=Very Fresh)")
+        st.write(f"Freshness Score: *{freshness}* (1=Rotten, 5=Very Fresh)")
 
         # Save the result to MongoDB
-        timestamp = datetime.utcnow().isoformat()
-        result = {
-            "filename": uploaded_file.name,
-            "prediction": predicted_class,
-            "shelf_life": shelf_life,
-            "freshness": freshness,
-            "timestamp": timestamp
-        }
-        collection.insert_one(result)
-        st.success("Prediction saved to MongoDB.")
-        logging.info("Prediction saved to MongoDB.")
-
+        if collection:  # Check if MongoDB is connected
+            try:
+                timestamp = datetime.utcnow().isoformat()
+                result = {
+                    "filename": uploaded_file.name,
+                    "prediction": predicted_class,
+                    "shelf_life": shelf_life,
+                    "freshness": freshness,
+                    "timestamp": timestamp
+                }
+                collection.insert_one(result)
+                st.success("Prediction saved to MongoDB.")
+                logging.info("Prediction saved to MongoDB.")
+            except Exception as e:
+                logging.error(f"Failed to save prediction to MongoDB: {e}")
+                st.warning("Prediction succeeded, but results could not be saved to MongoDB.")
     except Exception as e:
         logging.error(f"Error during prediction: {e}")
-        st.error("An error occurred during prediction. Please check the logs.")
+        st.error("An error occurred during prediction. Please try again.")
 
 # Display predictions stored in MongoDB
 if st.button("View All Predictions"):
-    try:
-        predictions = list(collection.find({}, {"_id": 0}))
-        if predictions:
-            st.write(f"Total Predictions: {len(predictions)}")
-            for prediction in predictions:
-                freshness = calculate_freshness(prediction["shelf_life"])
-                prediction["freshness"] = freshness
-                st.write(prediction)
-        else:
-            st.write("No predictions found.")
-    except Exception as e:
-        logging.error(f"Error retrieving predictions from MongoDB: {e}")
-        st.error("Failed to retrieve predictions. Please check the logs.")
+    if collection:  # Check if MongoDB is connected
+        try:
+            predictions = list(collection.find({}, {"_id": 0}))
+            if predictions:
+                st.write(f"Total Predictions: {len(predictions)}")
+                for prediction in predictions:
+                    freshness = calculate_freshness(prediction["shelf_life"])
+                    prediction["freshness"] = freshness
+                    st.write(prediction)
+            else:
+                st.info("No predictions found in the database.")
+        except Exception as e:
+            logging.error(f"Error retrieving predictions from MongoDB: {e}")
+            st.error("Failed to retrieve predictions. Please check your MongoDB connection.")
+    else:
+        st.warning("MongoDB is not connected. Cannot fetch predictions.")
