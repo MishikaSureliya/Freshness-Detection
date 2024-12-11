@@ -13,7 +13,7 @@ logging.basicConfig(level=logging.INFO)
 # Load the pre-trained model
 MODEL_PATH = 'C:/Users/mishi/OneDrive/Desktop/flipkart/Fresh_Rotten_Fruits_MobileNetV2_Transfer_Learning.h5'
 if not os.path.exists(MODEL_PATH):
-    raise FileNotFoundError(f"Model file not found at {MODEL_PATH}")
+    # raise FileNotFoundError(f"Model file not found at {MODEL_PATH}")
 model = load_model(MODEL_PATH)
 logging.info("Model loaded successfully.")
 
